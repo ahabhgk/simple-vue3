@@ -1,0 +1,9 @@
+{
+  "name": "ts-vue3-core",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:ahabhgk/simple-vue3.git",
+  "author": "ahabhgk <ahabhgk@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {}
+}
