@@ -1,7 +1,12 @@
+import { TriggerOpTypes } from './operations.js'
+import { isArray } from '../../shared/index.js'
+
 const targetMap = new WeakMap()
 
 let activeEffect
 let effectStack = []
+
+export const ITERATE_KEY = Symbol('iterate')
 
 export function isEffect(fn) {
   return fn && fn._isEffect === true
@@ -55,7 +60,7 @@ function cleanup(effect) {
   deps.length = 0 // 清空 effect 的 deps
 }
 
-export function track(target, key) {
+export function track(target, type, key) {
   if (activeEffect == null) return
 
   let depsMap = targetMap.get(target)
@@ -75,13 +80,14 @@ export function track(target, key) {
       activeEffect.options.onTrack({
         effect: activeEffect,
         target,
+        type,
         key
       })
     }
   }
 }
 
-export function trigger(target, key) {
+export function trigger(target, type, key) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
   // 需要新建一个 set，如果直接 const effect = depsMap.get(key)
@@ -96,7 +102,18 @@ export function trigger(target, key) {
       })
     }
   }
-  if (key !== undefined) add(depsMap.get(key))
+
+  // SET | ADD | DELETE
+  if (key !== undefined) {
+    add(depsMap.get(key))
+  }
+  const shouldTriggerIteration =
+    (type === TriggerOpTypes.ADD) ||
+    (type === TriggerOpTypes.DELETE)
+  // iteration key on ADD | DELETE
+  if (shouldTriggerIteration) {
+    add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
+  }
 
   const run = (effect) => {
     if (effect.options.onTrigger) {

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="plus-one"></div>
+  <div class="count"></div>
+  <button class="inc">+</button>
+  <button class="dec">-</button>
+
+<script type="module">
+  import { ref, computed, effect } from '../../packages/reactivity/index.js'
+
+  const $inc = document.querySelector('.inc')
+  const $dec = document.querySelector('.dec')
+  const $plueOne = document.querySelector('.plus-one')
+  const $count = document.querySelector('.count')
+
+  const count = ref(0)
+  const num = computed(() => count.value + 1)
+
+  effect(() => {
+    $plueOne.innerHTML = num.value
+    $count.innerHTML = count.value
+  })
+
+  $inc.addEventListener('click', () => {
+    count.value++
+  })
+  $dec.addEventListener('click', () => {
+    count.value--
+  })
+</script>
+</body>
+</html>
