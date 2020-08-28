@@ -14,7 +14,7 @@ export const isObject = (value) =>
 export const isArray = Array.isArray
 
 export const hasOwn = (val, key) =>
-  val.hasOwnProperty(key)
+  Object.prototype.hasOwnProperty.call(val, key)
 
 // compare whether a value has changed, accounting for NaN.
 export const hasChanged = (value, oldValue) =>

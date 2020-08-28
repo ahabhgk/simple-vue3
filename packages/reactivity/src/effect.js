@@ -102,17 +102,23 @@ export function trigger(target, type, key) {
       })
     }
   }
-
-  // SET | ADD | DELETE
-  if (key !== undefined) {
-    add(depsMap.get(key))
-  }
-  const shouldTriggerIteration =
-    (type === TriggerOpTypes.ADD) ||
-    (type === TriggerOpTypes.DELETE)
-  // iteration key on ADD | DELETE
-  if (shouldTriggerIteration) {
-    add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
+  if (type === TriggerOpTypes.CLEAR) {
+    // collection being cleared
+    // trigger all effects for target
+    depsMap.forEach(add)
+  } else {
+    // SET | ADD | DELETE
+    if (key !== undefined) {
+      add(depsMap.get(key))
+    }
+    const shouldTriggerIteration =
+      (type === TriggerOpTypes.ADD) ||
+      (type === TriggerOpTypes.DELETE) ||
+      (type === TriggerOpTypes.SET && target instanceof Map)
+    // iteration key on ADD | DELETE | Map.SET
+    if (shouldTriggerIteration) {
+      add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
+    }
   }
 
   const run = (effect) => {

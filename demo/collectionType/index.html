@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+<script type="module">
+  import { reactive, effect } from '../../packages/reactivity/index.js'
+  
+  const key = reactive({ key: 1 })
+  const value = reactive({ value: 2 })
+  const map = reactive(new Map())
+  
+  effect(() => {
+    debugger
+    console.log('get', map.get(key))
+    console.log('has', map.has(key))
+    map.forEach((value, key) => console.log('forEach: ', value, key))
+    console.log([...map.keys()])
+  })
+
+  map.set(key, value)
+  map.delete(key)
+</script>
+</body>
+</html>
