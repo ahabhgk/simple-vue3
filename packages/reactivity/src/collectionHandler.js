@@ -9,7 +9,6 @@ import { TrackOpTypes, TriggerOpTypes } from './operations.js'
 const get = (target, key, isReadonly) => {
   const rawTarget = toRaw(target)
   const rawKey = toRaw(key)
-  // console.log(rawTarget, rawKey)
   !isReadonly && track(rawTarget, TrackOpTypes.GET, rawKey)
   const res = rawTarget.get(rawKey)
   if (isObject(res)) {
@@ -40,7 +39,7 @@ const add = (target, value, isReadonly) => {
   const rawTarget = toRaw(target)
   const hadKey = rawTarget.has(rawValue)
   const res = rawTarget.add(rawValue)
-  if (!hadKey) {
+  if (!hadKey) { // 要先执行 add 后再 trigger，保证 effect 中的函数能执行出正确的结果
     trigger(target, TriggerOpTypes.ADD, value)
   }
   return res
@@ -104,13 +103,13 @@ const createIterableMethod = (method, isReadonly) => {
   return (target, ...args) => {
     const rawTarget = toRaw(target)
     const rawIterator = rawTarget[method](...args)
-    console.log(rawIterator)
     const wrap = (value) => {
       if (isObject(value)) return isReadonly ? readonly(value) : reactive(value)
       return value
     }
     !isReadonly && track(rawTarget, TrackOpTypes.ITERATE, ITERATE_KEY)
     return {
+      // iterator protocol
       next() {
         const { value, done } = rawIterator.next()
         return done
@@ -120,6 +119,7 @@ const createIterableMethod = (method, isReadonly) => {
             done,
           }
       },
+      // iterable protocol
       [Symbol.iterator]() {
         return this // 返回拦截的 Iterator：rawIterator -> proxyIterator(this)
       },

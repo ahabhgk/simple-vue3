@@ -1,7 +1,7 @@
 import { ReactiveFlags, readonly, reactive, readonlyMap, reactiveMap } from './reactive.js'
 import { TrackOpTypes, TriggerOpTypes } from './operations.js'
 import { track, trigger, ITERATE_KEY } from './effect.js'
-import { hasOwn, hasChanged } from '../../shared/index.js'
+import { hasOwn, hasChanged, isObject } from '../../shared/index.js'
 
 function createGetter(isReadonly = false) {
   return function get(target, key, receiver) {
