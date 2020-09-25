@@ -84,6 +84,4 @@ export const readonlyHandlers = {
     )
     return true
   },
-  has,
-  ownKeys,
 }

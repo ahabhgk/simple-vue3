@@ -29,6 +29,7 @@ function createComputedRef(getter, setter) {
         }
       },
     })
+    computedRef.effect = computeEffect // runtime-core 组件拿 effect 用
     return {
       get: () => {
         if (dirty) {

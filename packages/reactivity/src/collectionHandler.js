@@ -187,6 +187,7 @@ function createInstrumentationGetter(isReadonly) {
 export const mutableCollectionHandlers = {
   get: createInstrumentationGetter(false),
 }
+
 export const readonlyCollectionHandlers = {
   get: createInstrumentationGetter(true),
 }

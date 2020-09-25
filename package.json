@@ -1,9 +1,14 @@
 {
   "name": "ts-vue3-core",
   "version": "1.0.0",
+  "scripts": {
+    "demo": "parcel ./demo/index.html"
+  },
   "main": "index.js",
   "repository": "git@github.com:ahabhgk/simple-vue3.git",
   "author": "ahabhgk <ahabhgk@gmail.com>",
   "license": "MIT",
-  "devDependencies": {}
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
+  }
 }
