@@ -1,8 +1,23 @@
 import { effect, stop } from '../reactivity'
-import { recordInstanceBoundEffect } from './component'
+import { getCurrentInstance, recordInstanceBoundEffect } from './component'
+import { queueSyncJob } from './scheduler'
 
-export const watchEffect = (cb) => {
-  const e = effect(cb)
+export const watchEffect = (cb, { onTrack, onTrigger } = {}) => {
+  const e = effect(cb, {
+    onTrack,
+    onTrigger,
+    scheduler: queueSyncJob,
+  })
+
   recordInstanceBoundEffect(e)
-  return () => stop(e)
+  const instance = getCurrentInstance()
+
+  return () => {
+    stop(e)
+    if (instance) {
+      const { effects } = instance
+      const i = effects.indexOf(e)
+      if (i > -1) effects.splice(i, 1)
+    }
+  }
 }

@@ -1,8 +1,9 @@
-import { isObject, isString, isArray, isText } from '../shared'
-import { Text, isTextType } from './component'
+import { isString, isArray, isText } from '../shared'
+import { Text, isTextType, isSetupComponent } from './component'
 import { isSameVNodeType, h } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
+import { queueSyncJob } from './scheduler'
 
 export function createRenderer(options) {
   const patch = (n1, n2, container, isSVG) => {
@@ -12,14 +13,14 @@ export function createRenderer(options) {
     }
 
     const { type } = n2
-    if (isObject(type)) {
+    if (isSetupComponent(type)) {
       processComponent(n1, n2, container, isSVG)
     } else if (isString(type)) {
       processElement(n1, n2, container, isSVG)
     } else if (isTextType(type)) {
       processText(n1, n2, container)
     } else {
-      type.process(/* ... */)
+      type.patch(/* ... */)
     }
   }
 
@@ -42,6 +43,8 @@ export function createRenderer(options) {
         renderResult.parent = n2
         patch(prevRenderResult, renderResult, container, isSVG)
         prevRenderResult = renderResult
+      }, {
+        scheduler: queueSyncJob,
       })
     } else {
       const instance = n2.instance = n1.instance
@@ -161,7 +164,7 @@ export function createRenderer(options) {
 
   const unmount = (vnode, doRemove = true) => {
     const { type } = vnode
-    if (isObject(type)) {
+    if (isSetupComponent(type)) {
       const { instance } = vnode
       instance.effects.forEach(stop)
       stop(instance.update)

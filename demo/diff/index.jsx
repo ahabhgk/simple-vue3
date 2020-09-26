@@ -4,9 +4,10 @@ import { h, createRenderer, watchEffect, computed } from '../../packages/runtime
 
 const Displayer = {
   setup(props) {
-    return () => (
-      <div>{props.children}</div>
-    )
+    return () => {
+      console.log('render')
+      return <div>{props.children.value}</div>
+    }
   }
 }
 
@@ -15,11 +16,12 @@ const App = {
     const count = ref(0)
     const inc = () => count.value++
 
-    watchEffect(() => console.log(count.value))
+    watchEffect(() => console.log(count.value), { flush: 'sync' })
 
     return () => (
       <div>
-        {count.value % 2 ? <Displayer>{count.value}</Displayer> : null}
+        {/* {count.value % 2 ? <Displayer>{count.value}</Displayer> : null} */}
+        <Displayer>{count}</Displayer>
         <button onClick={inc}> + </button>
       </div>
     )
