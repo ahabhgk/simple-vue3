@@ -1,3 +1,5 @@
+import 'regenerator-runtime/runtime'
+
 /** @jsx h */
 import { ref } from '../../packages/reactivity'
 import { h, createRenderer, watchEffect, computed } from '../../packages/runtime-core'
@@ -11,12 +13,32 @@ const Displayer = {
   }
 }
 
+const useLogger = () => {
+  let id
+  return {
+    logger: (v, time = 2000) => new Promise(resolve => {
+      id = setTimeout(() => {
+        console.log(v)
+        resolve()
+      }, time)
+    }),
+    cancel: () => {
+      clearTimeout(id)
+      id = null
+    },
+  }
+}
+
 const App = {
   setup(props) {
     const count = ref(0)
     const inc = () => count.value++
+    const { logger, cancel } = useLogger()
 
-    watchEffect(() => console.log(count.value), { flush: 'sync' })
+    watchEffect(async (onInvalidate) => {
+      onInvalidate(cancel)
+      await logger(count.value)
+    })
 
     return () => (
       <div>

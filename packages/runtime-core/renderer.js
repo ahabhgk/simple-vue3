@@ -3,7 +3,7 @@ import { Text, isTextType, isSetupComponent } from './component'
 import { isSameVNodeType, h } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
-import { queueSyncJob } from './scheduler'
+import { queueJob } from './scheduler'
 
 export function createRenderer(options) {
   const patch = (n1, n2, container, isSVG) => {
@@ -44,7 +44,7 @@ export function createRenderer(options) {
         patch(prevRenderResult, renderResult, container, isSVG)
         prevRenderResult = renderResult
       }, {
-        scheduler: queueSyncJob,
+        scheduler: queueJob,
       })
     } else {
       const instance = n2.instance = n1.instance

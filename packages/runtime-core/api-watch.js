@@ -1,13 +1,26 @@
 import { effect, stop } from '../reactivity'
 import { getCurrentInstance, recordInstanceBoundEffect } from './component'
-import { queueSyncJob } from './scheduler'
+import { queueJob } from './scheduler'
 
+const afterPaint = requestAnimationFrame
 export const watchEffect = (cb, { onTrack, onTrigger } = {}) => {
-  const e = effect(cb, {
+  let cleanup
+  const onInvalidate = (fn) => cleanup = e.options.onStop = fn
+  const getter = () => {
+    if (cleanup) {
+      cleanup()
+    }
+    return cb(onInvalidate)
+  }
+
+  const scheduler = (job) => queueJob(() => afterPaint(job))
+  const e = effect(getter, {
     onTrack,
     onTrigger,
-    scheduler: queueSyncJob,
+    lazy: true,
+    scheduler,
   })
+  scheduler(e) // init run
 
   recordInstanceBoundEffect(e)
   const instance = getCurrentInstance()

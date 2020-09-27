@@ -1,11 +1,11 @@
 const resolvedPromise = Promise.resolve()
-const syncQueue = []
+const queue = []
 
-export const queueSyncJob = (job) => {
-  syncQueue.push(job)
+export const queueJob = (job) => {
+  queue.push(job)
   resolvedPromise.then(() => {
-    const deduped = [...new Set(syncQueue)]
-    syncQueue.length = 0
+    const deduped = [...new Set(queue)]
+    queue.length = 0
     deduped.forEach(job => job())
   })
 }
