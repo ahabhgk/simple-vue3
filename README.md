@@ -17,7 +17,7 @@
 
 - [x] host node diff
 - [x] component diff
-- [ ] key diff (2, 3)
+- [ ] key diff (1, 2, 3)
 - [x] props
 - [ ] defineComponent
 - [ ] defineAsyncComponent

@@ -6,7 +6,7 @@ import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
 
 export function createRenderer(options) {
-  const patch = (n1, n2, container, isSVG) => {
+  const patch = (n1, n2, container, isSVG, anchor = null) => {
     if (n1 && !isSameVNodeType(n1, n2)) {
       unmount(n1)
       n1 = null
@@ -14,40 +14,42 @@ export function createRenderer(options) {
 
     const { type } = n2
     if (isSetupComponent(type)) {
-      processComponent(n1, n2, container, isSVG)
+      processComponent(n1, n2, container, isSVG, anchor)
     } else if (isString(type)) {
-      processElement(n1, n2, container, isSVG)
+      processElement(n1, n2, container, isSVG, anchor)
     } else if (isTextType(type)) {
-      processText(n1, n2, container)
+      processText(n1, n2, container, anchor)
     } else {
       type.patch(/* ... */)
     }
   }
 
-  const processComponent = (n1, n2, container, isSVG) => {
+  const processComponent = (n1, n2, container, isSVG, anchor) => {
     if (n1 == null) {
       const instance = n2.instance = {
         props: reactive(n2.props), // initProps
         update: null,
         effects: [],
+        subTree: null
       }
 
       setCurrentInstance(instance)
       const render = n2.type.setup(instance.props)
       setCurrentInstance(null)
 
-      let prevRenderResult = null
-      instance.update = effect(() => {
+      instance.update = effect(() => { // component update 的入口
         const renderResult = render()
         n2.children = [renderResult]
         renderResult.parent = n2
-        patch(prevRenderResult, renderResult, container, isSVG)
-        prevRenderResult = renderResult
+        patch(instance.subTree, renderResult, container, isSVG, anchor)
+        n2.node = renderResult.node
+        instance.subTree = renderResult
       }, {
         scheduler: queueJob,
       })
     } else {
       const instance = n2.instance = n1.instance
+      n2.node = n1.node
       // updateProps, 根据 vnode.props 修改 instance.props
       Object.keys(n2.props).forEach(key => {
         const newValue = n2.props[key]
@@ -59,24 +61,26 @@ export function createRenderer(options) {
     }
   }
 
-  const processText = (n1, n2, container) => {
+  const processText = (n1, n2, container, anchor) => {
     if (n1 == null) {
       const node = n2.node = document.createTextNode(n2.props.nodeValue)
-      container.appendChild(node)
+      container.insertBefore(node, anchor)
     } else {
       const node = n2.node = n1.node
-      node.nodeValue = n2.props.nodeValue
+      if (node.nodeValue !== n2.props.nodeValue) {
+        node.nodeValue !== n2.props.nodeValue
+      }
     }
   }
 
-  const processElement = (n1, n2, container, isSVG) => {
+  const processElement = (n1, n2, container, isSVG, anchor) => {
     if (n1 == null) {
       const node = n2.node = isSVG
         ? document.createElementNS('http://www.w3.org/2000/svg', n2.type)
         : document.createElement(n2.type)
-      patchChildren(null, n2, node, isSVG)
+      mountChildren(n2, node, isSVG)
       patchProps(null, n2.props, node, isSVG)
-      container.appendChild(node)
+      container.insertBefore(node, anchor)
     } else {
       const node = n2.node = n1.node
       patchChildren(n1, n2, node, isSVG)
@@ -84,32 +88,61 @@ export function createRenderer(options) {
     }
   }
 
-  const patchChildren = (n1, n2, container, isSVG = false) => {
-    const oldChildren = n1 ? n1.children : []
+  const mountChildren = (vnode, container, isSVG) => {
+    let children = vnode.props.children
+    children = isArray(children) ? children : [children]
+    vnode.children = []
+    for (let i = 0; i < children.length; i++) {
+      let child = children[i]
+      if (child == null) continue
+      child = isText(child) ? h(Text, { nodeValue: child }) : child
+      vnode.children[i] = child
+      patch(null, child, container, isSVG)
+    }
+  }
+
+  const patchChildren = (n1, n2, container, isSVG) => {
+    const oldChildren = n1.children
     let newChildren = n2.props.children
     newChildren = isArray(newChildren) ? newChildren : [newChildren]
     n2.children = []
-  
+
+    let lastIndex = 0
     for (let i = 0; i < newChildren.length; i++) {
       if (newChildren[i] == null) continue
       let newChild = newChildren[i]
       newChild = isText(newChild) ? h(Text, { nodeValue: newChild }) : newChild
       n2.children[i] = newChild
       newChild.parent = n2
-  
-      let oldChild = null
+
+      let find = false
       for (let j = 0; j < oldChildren.length; j++) {
         if (oldChildren[j] == null) continue
-        if (isSameVNodeType(oldChildren[j], newChild)) {
-          oldChild = oldChildren[j]
+        if (isSameVNodeType(oldChildren[j], newChild)) { // update
+          const oldChild = oldChildren[j]
           oldChildren[j] = null
+          find = true
+
+          patch(oldChild, newChild, container, isSVG)
+
+          if (j < lastIndex) { // move
+            const refNode = newChildren[i - 1].node.nextSibling
+            container.insertBefore(oldChild.node, refNode)
+          } else { // no need to move
+            lastIndex = j
+          }
           break
         }
       }
-      patch(oldChild, newChild, container, isSVG)
-      if (newChild.node) container.appendChild(newChild.node)
+      // mount
+      if (!find) {
+        const refNode = i - 1 < 0
+          ? oldChildren[0].node
+          : newChildren[i - 1].node.nextSibling
+        patch(null, newChild, container, isSVG, refNode)
+      }
     }
-  
+
     for (let oldChild of oldChildren) {
       if (oldChild != null) unmount(oldChild)
     }
@@ -135,10 +168,10 @@ export function createRenderer(options) {
   const setProperty = (node, propName, newValue, oldValue, isSVG) => {
     if (propName[0] === 'o' && propName[1] === 'n') {
       const eventType = propName.toLowerCase().slice(2);
-  
+
       if (!node.listeners) node.listeners = {};
       node.listeners[eventType] = newValue;
-  
+
       if (newValue) {
         if (!oldValue) {
           node.addEventListener(eventType, eventProxy);
