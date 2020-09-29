@@ -1,7 +1,27 @@
-import { createRenderer } from '../runtime-core/renderer'
+import { createRenderer, h } from '../runtime-core'
 
 const nodeOps = {
   querySelector: (sel) => document.querySelector(sel),
+
+  insert: (child, parent, anchor) => {
+    parent.insertBefore(child, anchor ?? null)
+  },
+
+  remove: child => {
+    const parent = child.parentNode
+    if (parent) {
+      parent.removeChild(child)
+    }
+  },
+
+  createElement: (tag, isSVG) => isSVG
+    ? doc.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag),
+
+  createText: text => document.createTextNode(text),
+
+  nextSibling: node => node.nextSibling,
+
   setProperty: (node, propName, newValue, oldValue, isSVG) => {
     if (propName[0] === 'o' && propName[1] === 'n') {
       const eventType = propName.toLowerCase().slice(2);
@@ -33,5 +53,7 @@ function eventProxy(e) {
   this.listeners[e.type](e)
 }
 
-export const createApp = (rootComponent) => (rootSel) => createRenderer(nodeOps)
-  .render(h(rootComponent), nodeOps.querySelector(rootSel))
+export const createApp = (rootComponent) => ({
+  mount: (rootSel) =>
+    createRenderer(nodeOps).render(h(rootComponent), nodeOps.querySelector(rootSel))
+})

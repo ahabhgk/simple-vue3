@@ -1,6 +1,7 @@
 /** @jsx h */
 import { effect, reactive, ref } from '../../packages/reactivity'
-import { h, createRenderer, watchEffect, computed } from '../../packages/runtime-core'
+import { h, watchEffect, computed } from '../../packages/runtime-core'
+import { createApp } from '../../packages/runtime-dom'
 
 const Li = {
   setup(props) {
@@ -35,4 +36,4 @@ const App = {
   }
 }
 
-createRenderer().render(<App />, document.querySelector('#root'))
+createApp(App).mount('#root')

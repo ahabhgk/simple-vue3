@@ -5,7 +5,16 @@ import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
 
-export function createRenderer(options) {
+export function createRenderer(renderOptions) {
+  const {
+    createText: hostCreateText,
+    createElement: hostCreateElement,
+    insert: hostInsert,
+    nextSibling: hostNextSibling,
+    setProperty: hostSetProperty,
+    remove: hostRemove,
+  } = renderOptions
+
   const patch = (n1, n2, container, isSVG, anchor = null) => {
     if (n1 && !isSameVNodeType(n1, n2)) {
       unmount(n1)
@@ -63,8 +72,8 @@ export function createRenderer(options) {
 
   const processText = (n1, n2, container, anchor) => {
     if (n1 == null) {
-      const node = n2.node = document.createTextNode(n2.props.nodeValue)
-      container.insertBefore(node, anchor)
+      const node = n2.node = hostCreateText(n2.props.nodeValue)
+      hostInsert(node, container, anchor)
     } else {
       const node = n2.node = n1.node
       if (node.nodeValue !== n2.props.nodeValue) {
@@ -75,12 +84,10 @@ export function createRenderer(options) {
 
   const processElement = (n1, n2, container, isSVG, anchor) => {
     if (n1 == null) {
-      const node = n2.node = isSVG
-        ? document.createElementNS('http://www.w3.org/2000/svg', n2.type)
-        : document.createElement(n2.type)
+      const node = n2.node = hostCreateElement(n2.type, isSVG)
       mountChildren(n2, node, isSVG)
       patchProps(null, n2.props, node, isSVG)
-      container.insertBefore(node, anchor)
+      hostInsert(node, container, anchor)
     } else {
       const node = n2.node = n1.node
       patchChildren(n1, n2, node, isSVG)
@@ -126,8 +133,8 @@ export function createRenderer(options) {
           patch(oldChild, newChild, container, isSVG)
 
           if (j < lastIndex) { // move
-            const refNode = newChildren[i - 1].node.nextSibling
-            container.insertBefore(oldChild.node, refNode)
+            const refNode = hostNextSibling(newChildren[i - 1].node)
+            hostInsert(oldChild.node, container, refNode)
           } else { // no need to move
             lastIndex = j
           }
@@ -138,7 +145,7 @@ export function createRenderer(options) {
       if (!find) {
         const refNode = i - 1 < 0
           ? oldChildren[0].node
-          : newChildren[i - 1].node.nextSibling
+          : hostNextSibling(newChildren[i - 1].node)
         patch(null, newChild, container, isSVG, refNode)
       }
     }
@@ -154,45 +161,15 @@ export function createRenderer(options) {
     // remove old props
     Object.keys(oldProps).forEach((propName) => {
       if (propName !== 'children' && propName !== 'key' && !(propName in newProps)) {
-        setProperty(node, propName, null, oldProps[propName], isSVG);
+        hostSetProperty(node, propName, null, oldProps[propName], isSVG);
       }
     });
     // update old props
     Object.keys(newProps).forEach((propName) => {
       if (propName !== 'children' && propName !== 'key' && oldProps[propName] !== newProps[propName]) {
-        setProperty(node, propName, newProps[propName], oldProps[propName], isSVG);
+        hostSetProperty(node, propName, newProps[propName], oldProps[propName], isSVG);
       }
     });
-  }
-
-  const setProperty = (node, propName, newValue, oldValue, isSVG) => {
-    if (propName[0] === 'o' && propName[1] === 'n') {
-      const eventType = propName.toLowerCase().slice(2);
-
-      if (!node.listeners) node.listeners = {};
-      node.listeners[eventType] = newValue;
-
-      if (newValue) {
-        if (!oldValue) {
-          node.addEventListener(eventType, eventProxy);
-        }
-      } else {
-        node.removeEventListener(eventType, eventProxy);
-      }
-    } else if (newValue !== oldValue) {
-      if (propName in node && !isSVG) {
-        node[propName] = newValue == null ? '' : newValue
-      } else if (newValue == null || newValue === false) {
-        node.removeAttribute(propName)
-      } else {
-        node.setAttribute(propName, newValue)
-      }
-    }
-  }
-
-  function eventProxy(e) {
-    // this: node
-    this.listeners[e.type](e)
   }
 
   const unmount = (vnode, doRemove = true) => {
@@ -204,13 +181,9 @@ export function createRenderer(options) {
       vnode.children.forEach(c => unmount(c, doRemove))
     } else if (isString(type)) {
       vnode.children.forEach(c => unmount(c, false))
-      const child = vnode.node
-      const parent = child.parentNode
-      if (parent && doRemove) parent.removeChild(child)
+      if (doRemove) hostRemove(vnode.node)
     } else if (isTextType(type)) {
-      const child = vnode.node
-      const parent = child.parentNode
-      if (parent && doRemove) parent.removeChild(child)
+      if (doRemove) hostRemove(vnode.node)
     } else {
       type.unmount(/** */)
     }
