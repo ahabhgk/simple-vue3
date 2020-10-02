@@ -1,11 +1,14 @@
 /** @jsx h */
 import { effect, reactive, ref } from '../../packages/reactivity'
-import { h, watchEffect, computed } from '../../packages/runtime-core'
+import { h, watchEffect, computed, Fragment } from '../../packages/runtime-core'
 import { createApp } from '../../packages/runtime-dom'
 
 const Li = {
   setup(props) {
-    return () => <li>{props.children}</li>
+    return () => <Fragment>
+      <li>{props.children}</li>
+      <li>{props.children}</li>
+    </Fragment>
   }
 }
 
@@ -17,10 +20,11 @@ const App = {
       const first = Math.floor(Math.random() * list.length)
       const second = Math.floor(Math.random() * list.length)
       ;[list[first], list[second]] = [list[second], list[first]]
+      console.log(first, second)
     }
     const insert = () => {
       const num = Math.floor(Math.random() * list.length)
-      list.splice(0, 0, Math.random() * list.length)
+      list.splice(num, 0, Math.random() * list.length)
       console.log(num)
     }
 

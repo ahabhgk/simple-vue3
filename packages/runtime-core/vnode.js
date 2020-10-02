@@ -22,3 +22,6 @@ export function h(type, props, ...children) {
 }
 
 export const isSameVNodeType = (n1, n2) => n1.type === n2.type && n1.key === n2.key
+
+export const TextType = Symbol('TextType')
+export const isTextType = (v) => v === TextType

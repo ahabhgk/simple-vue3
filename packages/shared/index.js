@@ -13,9 +13,11 @@ export const isObject = (value) =>
 
 export const isString = (value) => typeof value === 'string'
 
-export const isArray = Array.isArray
+export const isNumber = (value) => typeof value === 'number'
 
-export const isText = (v) => typeof v === 'string' || typeof v === 'number'
+export const isText = (value) => isString(value) || isNumber(value)
+
+export const isArray = Array.isArray
 
 export const hasOwn = (val, key) =>
   Object.prototype.hasOwnProperty.call(val, key)

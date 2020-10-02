@@ -1,6 +1,6 @@
 import { isString, isArray, isText } from '../shared'
-import { Text, isTextType, isSetupComponent } from './component'
-import { isSameVNodeType, h } from './vnode'
+import { isSetupComponent } from './component'
+import { isSameVNodeType, h, TextType, isTextType } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
@@ -29,7 +29,49 @@ export function createRenderer(renderOptions) {
     } else if (isTextType(type)) {
       processText(n1, n2, container, anchor)
     } else {
-      type.patch(/* ... */)
+      type.patch(internals, { n1, n2, container, isSVG, anchor })
+    }
+  }
+
+  const getNode = (vnode) => {
+    const { type } = vnode
+    if (isSetupComponent(type)) return getNode(vnode.instance.subTree)
+    if (isString(type) || isTextType(type)) return vnode.node
+    return type.getNode(internals, { vnode })
+  }
+
+  const getNextSibling = (vnode) => {
+    const { type } = vnode
+    if (isSetupComponent(type)) return getNextSibling(vnode.instance.subTree)
+    if (isString(type) || isTextType(type)) return hostNextSibling(vnode.node)
+    return type.getNextSibling(internals, { vnode })
+  }
+
+  const move = (vnode, container, anchor) => {
+    const { type } = vnode
+    if (isSetupComponent(type)) {
+      move(vnode.instance.subTree, container, anchor)
+    } else if (isString(type) || isTextType(type)) {
+      hostInsert(vnode.node, container, anchor)
+    } else {
+      type.move(internals, { vnode, container, anchor })
+    }
+  }
+
+  const unmount = (vnode, doRemove = true) => {
+    const { type } = vnode
+    if (isSetupComponent(type)) {
+      const { instance } = vnode
+      instance.effects.forEach(stop)
+      stop(instance.update)
+      vnode.children.forEach(c => unmount(c, doRemove))
+    } else if (isString(type)) {
+      vnode.children.forEach(c => unmount(c, false))
+      if (doRemove) hostRemove(vnode.node)
+    } else if (isTextType(type)) {
+      if (doRemove) hostRemove(vnode.node)
+    } else {
+      type.unmount(internals, { vnode, doRemove })
     }
   }
 
@@ -51,14 +93,12 @@ export function createRenderer(renderOptions) {
         n2.children = [renderResult]
         renderResult.parent = n2
         patch(instance.subTree, renderResult, container, isSVG, anchor)
-        n2.node = renderResult.node
         instance.subTree = renderResult
       }, {
         scheduler: queueJob,
       })
     } else {
       const instance = n2.instance = n1.instance
-      n2.node = n1.node
       // updateProps, 根据 vnode.props 修改 instance.props
       Object.keys(n2.props).forEach(key => {
         const newValue = n2.props[key]
@@ -95,16 +135,16 @@ export function createRenderer(renderOptions) {
     }
   }
 
-  const mountChildren = (vnode, container, isSVG) => {
+  const mountChildren = (vnode, container, isSVG, anchor) => {
     let children = vnode.props.children
     children = isArray(children) ? children : [children]
     vnode.children = []
     for (let i = 0; i < children.length; i++) {
       let child = children[i]
       if (child == null) continue
-      child = isText(child) ? h(Text, { nodeValue: child }) : child
+      child = isText(child) ? h(TextType, { nodeValue: child }) : child
       vnode.children[i] = child
-      patch(null, child, container, isSVG)
+      patch(null, child, container, isSVG, anchor)
     }
   }
 
@@ -118,7 +158,7 @@ export function createRenderer(renderOptions) {
     for (let i = 0; i < newChildren.length; i++) {
       if (newChildren[i] == null) continue
       let newChild = newChildren[i]
-      newChild = isText(newChild) ? h(Text, { nodeValue: newChild }) : newChild
+      newChild = isText(newChild) ? h(TextType, { nodeValue: newChild }) : newChild
       n2.children[i] = newChild
       newChild.parent = n2
 
@@ -133,8 +173,8 @@ export function createRenderer(renderOptions) {
           patch(oldChild, newChild, container, isSVG)
 
           if (j < lastIndex) { // move
-            const refNode = hostNextSibling(newChildren[i - 1].node)
-            hostInsert(oldChild.node, container, refNode)
+            const refNode = getNextSibling(newChildren[i - 1])
+            move(oldChild, container, refNode)
           } else { // no need to move
             lastIndex = j
           }
@@ -144,8 +184,8 @@ export function createRenderer(renderOptions) {
       // mount
       if (!find) {
         const refNode = i - 1 < 0
-          ? oldChildren[0].node
-          : hostNextSibling(newChildren[i - 1].node)
+          ? getNode(oldChildren[0])
+          : getNextSibling(newChildren[i - 1])
         patch(null, newChild, container, isSVG, refNode)
       }
     }
@@ -172,21 +212,15 @@ export function createRenderer(renderOptions) {
     });
   }
 
-  const unmount = (vnode, doRemove = true) => {
-    const { type } = vnode
-    if (isSetupComponent(type)) {
-      const { instance } = vnode
-      instance.effects.forEach(stop)
-      stop(instance.update)
-      vnode.children.forEach(c => unmount(c, doRemove))
-    } else if (isString(type)) {
-      vnode.children.forEach(c => unmount(c, false))
-      if (doRemove) hostRemove(vnode.node)
-    } else if (isTextType(type)) {
-      if (doRemove) hostRemove(vnode.node)
-    } else {
-      type.unmount(/** */)
-    }
+  const internals = {
+    patch,
+    getNode,
+    getNextSibling,
+    move,
+    unmount,
+    mountChildren,
+    patchChildren,
+    renderOptions,
   }
 
   return {

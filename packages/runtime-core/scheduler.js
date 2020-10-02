@@ -9,3 +9,4 @@ export const queueJob = (job) => {
     deduped.forEach(job => job())
   })
 }
+export const afterPaint = requestAnimationFrame

@@ -1,8 +1,7 @@
 import { effect, stop } from '../reactivity'
 import { getCurrentInstance, recordInstanceBoundEffect } from './component'
-import { queueJob } from './scheduler'
+import { queueJob, afterPaint } from './scheduler'
 
-const afterPaint = requestAnimationFrame
 export const watchEffect = (cb, { onTrack, onTrigger } = {}) => {
   let cleanup
   const onInvalidate = (fn) => cleanup = e.options.onStop = fn
