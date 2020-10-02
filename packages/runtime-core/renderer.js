@@ -1,5 +1,5 @@
 import { isString, isArray, isText } from '../shared'
-import { isSetupComponent } from './component'
+import { getParentInstance, isSetupComponent } from './component'
 import { isSameVNodeType, h, TextType, isTextType } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
@@ -34,6 +34,7 @@ export function createRenderer(renderOptions) {
   }
 
   const getNode = (vnode) => {
+    if (!vnode) return null
     const { type } = vnode
     if (isSetupComponent(type)) return getNode(vnode.instance.subTree)
     if (isString(type) || isTextType(type)) return vnode.node
@@ -81,8 +82,13 @@ export function createRenderer(renderOptions) {
         props: reactive(n2.props), // initProps
         update: null,
         effects: [],
-        subTree: null
+        subTree: null,
+        vnode: n2,
+        parent: null,
+        provides: null,
       }
+      const parentInstance = instance.parent = getParentInstance(instance)
+      instance.provides = parentInstance ? parentInstance.provides : Object.create(null)
 
       setCurrentInstance(instance)
       const render = n2.type.setup(instance.props)
@@ -99,6 +105,7 @@ export function createRenderer(renderOptions) {
       })
     } else {
       const instance = n2.instance = n1.instance
+      instance.vnode = n2
       // updateProps, 根据 vnode.props 修改 instance.props
       Object.keys(n2.props).forEach(key => {
         const newValue = n2.props[key]
@@ -117,7 +124,7 @@ export function createRenderer(renderOptions) {
     } else {
       const node = n2.node = n1.node
       if (node.nodeValue !== n2.props.nodeValue) {
-        node.nodeValue !== n2.props.nodeValue
+        node.nodeValue = n2.props.nodeValue
       }
     }
   }
@@ -144,6 +151,7 @@ export function createRenderer(renderOptions) {
       if (child == null) continue
       child = isText(child) ? h(TextType, { nodeValue: child }) : child
       vnode.children[i] = child
+      child.parent = vnode
       patch(null, child, container, isSVG, anchor)
     }
   }

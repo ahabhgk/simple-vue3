@@ -3,8 +3,8 @@ import { createRenderer, h } from '../runtime-core'
 const nodeOps = {
   querySelector: (sel) => document.querySelector(sel),
 
-  insert: (child, parent, anchor) => {
-    parent.insertBefore(child, anchor ?? null)
+  insert: (child, parent, anchor = null) => {
+    parent.insertBefore(child, anchor)
   },
 
   remove: child => {

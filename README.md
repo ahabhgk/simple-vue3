@@ -21,10 +21,10 @@
 - [x] props
 - [ ] defineComponent
 - [ ] defineAsyncComponent
-- [ ] inject/provide
-- [ ] Fragment
+- [x] inject/provide
+- [x] Fragment
 - [ ] Suspense
-- [ ] Teleport
+- [x] Teleport
 
 ## complier
 

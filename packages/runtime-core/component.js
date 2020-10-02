@@ -9,3 +9,12 @@ export const setCurrentInstance = (instance) => currentInstance = instance
 export const recordInstanceBoundEffect = (effect) => {
   if (currentInstance) currentInstance.effects.push(effect)
 }
+
+export const getParentInstance = (instance) => {
+  let parentVNode = instance.vnode.parent
+  while (parentVNode != null) {
+    if (parentVNode.instance != null) return parentVNode.instance
+    parentVNode = parentVNode.parent
+  }
+  return null
+}

@@ -3,6 +3,7 @@ import 'regenerator-runtime/runtime'
 /** @jsx h */
 import { ref } from '../../packages/reactivity'
 import { h, createRenderer, watchEffect, computed } from '../../packages/runtime-core'
+import { createApp } from '../../packages/runtime-dom'
 
 const Displayer = {
   setup(props) {
@@ -50,4 +51,4 @@ const App = {
   }
 }
 
-createRenderer().render(<App />, document.querySelector('#root'))
+createApp(App).mount('#root')

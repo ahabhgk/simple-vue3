@@ -15,11 +15,11 @@ export const Fragment = {
     }
   },
 
-  getNode(internals, { vnode }) {
+  getNode(internals, { vnode }) { // 插入到它的前面，需要从头部拿
     return vnode.node
   },
 
-  getNextSibling({ renderOptions }, { vnode }) {
+  getNextSibling({ renderOptions }, { vnode }) { // nextSibling 需要从尾部拿
     return renderOptions.nextSibling(vnode.anchor)
   },
 
