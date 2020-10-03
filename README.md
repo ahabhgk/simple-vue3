@@ -22,6 +22,7 @@
 - [ ] defineComponent
 - [ ] defineAsyncComponent
 - [x] inject/provide
+- [x] onErrorCaptured
 - [x] Fragment
 - [ ] Suspense
 - [x] Teleport

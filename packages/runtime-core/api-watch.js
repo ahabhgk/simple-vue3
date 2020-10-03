@@ -1,15 +1,20 @@
 import { effect, stop } from '../reactivity'
 import { getCurrentInstance, recordInstanceBoundEffect } from './component'
+import { callWithErrorHandling } from './error-handling'
 import { queueJob, afterPaint } from './scheduler'
 
 export const watchEffect = (cb, { onTrack, onTrigger } = {}) => {
   let cleanup
-  const onInvalidate = (fn) => cleanup = e.options.onStop = fn
+  const onInvalidate = (fn) => {
+    cleanup = e.options.onStop = () => {
+      callWithErrorHandling(fn, instance)
+    }
+  }
   const getter = () => {
     if (cleanup) {
       cleanup()
     }
-    return cb(onInvalidate)
+    return callWithErrorHandling(cb, instance, [onInvalidate])
   }
 
   const scheduler = (job) => queueJob(() => afterPaint(job))

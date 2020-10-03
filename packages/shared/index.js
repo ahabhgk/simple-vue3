@@ -19,6 +19,8 @@ export const isText = (value) => isString(value) || isNumber(value)
 
 export const isArray = Array.isArray
 
+export const isPromise = (v) => isObject(v) && isFunction(v.then) && isFunction(v.catch)
+
 export const hasOwn = (val, key) =>
   Object.prototype.hasOwnProperty.call(val, key)
 

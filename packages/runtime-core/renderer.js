@@ -4,6 +4,7 @@ import { isSameVNodeType, h, TextType, isTextType } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
+import { callWithErrorHandling } from './error-handling'
 
 export function createRenderer(renderOptions) {
   const {
@@ -91,7 +92,7 @@ export function createRenderer(renderOptions) {
       instance.provides = parentInstance ? parentInstance.provides : Object.create(null)
 
       setCurrentInstance(instance)
-      const render = n2.type.setup(instance.props)
+      const render = callWithErrorHandling(n2.type.setup, instance, [instance.props])
       setCurrentInstance(null)
 
       instance.update = effect(() => { // component update 的入口
