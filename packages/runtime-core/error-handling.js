@@ -29,7 +29,7 @@ export const callWithAsyncErrorHandling = (fn, instance, args = []) => {
   return res
 }
 
-const handleError = (error, instance) => {
+export const handleError = (error, instance) => {
   if (instance) {
     let cur = instance.parent
     while (cur) {

@@ -1,10 +1,11 @@
-import { isString, isArray, isText } from '../shared'
+import { isString, isArray, isText, isPromise, isFunction } from '../shared'
 import { getParentInstance, isSetupComponent } from './component'
 import { isSameVNodeType, h, TextType, isTextType } from './vnode'
 import { reactive, effect, stop } from '../reactivity'
 import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
 import { callWithErrorHandling } from './error-handling'
+import { getParentSuspense } from './components/suspense'
 
 export function createRenderer(renderOptions) {
   const {
@@ -24,6 +25,7 @@ export function createRenderer(renderOptions) {
 
     const { type } = n2
     if (isSetupComponent(type)) {
+      console.log(n2)
       processComponent(n1, n2, container, isSVG, anchor)
     } else if (isString(type)) {
       processElement(n1, n2, container, isSVG, anchor)
@@ -63,6 +65,7 @@ export function createRenderer(renderOptions) {
   const unmount = (vnode, doRemove = true) => {
     const { type } = vnode
     if (isSetupComponent(type)) {
+      debugger
       const { instance } = vnode
       instance.effects.forEach(stop)
       stop(instance.update)
@@ -81,6 +84,7 @@ export function createRenderer(renderOptions) {
     if (n1 == null) {
       const instance = n2.instance = {
         props: reactive(n2.props), // initProps
+        render: null,
         update: null,
         effects: [],
         subTree: null,
@@ -92,18 +96,25 @@ export function createRenderer(renderOptions) {
       instance.provides = parentInstance ? parentInstance.provides : Object.create(null)
 
       setCurrentInstance(instance)
-      const render = callWithErrorHandling(n2.type.setup, instance, [instance.props])
+      const render = instance.render = callWithErrorHandling(n2.type.setup, instance, [instance.props])
       setCurrentInstance(null)
 
-      instance.update = effect(() => { // component update 的入口
-        const renderResult = render()
-        n2.children = [renderResult]
-        renderResult.parent = n2
-        patch(instance.subTree, renderResult, container, isSVG, anchor)
-        instance.subTree = renderResult
-      }, {
-        scheduler: queueJob,
-      })
+      if (isPromise(render)) {
+        const suspense = getParentSuspense(n2)
+        suspense.register(instance)
+      } else if (isFunction(render)) {
+        instance.update = effect(() => { // component update 的入口
+          const renderResult = instance.render()
+          n2.children = [renderResult]
+          renderResult.parent = n2
+          patch(instance.subTree, renderResult, container, isSVG, anchor)
+          instance.subTree = renderResult
+        }, {
+          scheduler: queueJob,
+        })
+      } else {
+        console.warn('setup component: ', n2.type, ' need to return a render function')
+      }
     } else {
       const instance = n2.instance = n1.instance
       instance.vnode = n2

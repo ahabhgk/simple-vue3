@@ -20,7 +20,7 @@ const App = {
     }
     const insert = () => {
       const num = Math.floor(Math.random() * list.length)
-      list.splice(0, 0, Math.random() * list.length)
+      list.splice(num, 0, Math.random() * list.length)
       console.log(num)
     }
 

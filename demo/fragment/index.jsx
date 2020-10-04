@@ -31,7 +31,7 @@ const App = {
     return () => (
       <div>
         <ul>
-          {list.map(e => <Li key={e}>{e}</Li>)}
+          {list.map(e => <Fragment><Li key={e}>{e}</Li></Fragment>)}
         </ul>
         <button onClick={swapTwo}>swapTwo</button>
         <button onClick={shuffle}>shuffle</button>
