@@ -25,7 +25,6 @@ export function createRenderer(renderOptions) {
 
     const { type } = n2
     if (isSetupComponent(type)) {
-      console.log(n2)
       processComponent(n1, n2, container, isSVG, anchor)
     } else if (isString(type)) {
       processElement(n1, n2, container, isSVG, anchor)
@@ -65,7 +64,6 @@ export function createRenderer(renderOptions) {
   const unmount = (vnode, doRemove = true) => {
     const { type } = vnode
     if (isSetupComponent(type)) {
-      debugger
       const { instance } = vnode
       instance.effects.forEach(stop)
       stop(instance.update)
@@ -101,19 +99,34 @@ export function createRenderer(renderOptions) {
 
       if (isPromise(render)) {
         const suspense = getParentSuspense(n2)
-        suspense.register(instance)
+        const placeholder = instance.subTree = h(TextType, { nodeValue: '' })
+        patch(null, placeholder, container, anchor)
+        suspense.register(
+          instance,
+          () => setupRenderEffect(
+            instance,
+            internals.renderOptions.parentNode(instance.subTree.node),
+            isSVG,
+            internals.renderOptions.nextSibling(instance.subTree.node),
+          ),
+        )
       } else if (isFunction(render)) {
+        setupRenderEffect(instance, container, isSVG, anchor)
+      } else {
+        console.warn('setup component: ', n2.type, ' need to return a render function')
+      }
+
+      function setupRenderEffect(instance, container, isSVG, anchor) {
         instance.update = effect(() => { // component update 的入口
-          const renderResult = instance.render()
-          n2.children = [renderResult]
-          renderResult.parent = n2
+          const renderResult = instance.render() ?? h(TextType, { nodeValue: '' })
+          const vnode = instance.vnode
+          vnode.children = [renderResult]
+          renderResult.parent = vnode
           patch(instance.subTree, renderResult, container, isSVG, anchor)
           instance.subTree = renderResult
         }, {
           scheduler: queueJob,
         })
-      } else {
-        console.warn('setup component: ', n2.type, ' need to return a render function')
       }
     } else {
       const instance = n2.instance = n1.instance

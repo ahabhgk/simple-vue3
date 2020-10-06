@@ -19,12 +19,12 @@
 - [x] component diff
 - [x] key diff (Preact key diff)
 - [x] props
-- [ ] defineComponent
-- [ ] defineAsyncComponent
+- [x] defineComponent
+- [x] defineAsyncComponent
 - [x] inject/provide
 - [x] onErrorCaptured
-- [ ] Fragment (FIX: patchFragment)
-- [ ] Suspense (TODO: patchSuspense)
+- [x] Fragment (FIX: patchFragment)
+- [x] Suspense (TODO: patchSuspense)
 - [x] Teleport
 
 ## complier

@@ -22,6 +22,8 @@ const nodeOps = {
 
   nextSibling: node => node.nextSibling,
 
+  parentNode: node => node.parentNode,
+
   setProperty: (node, propName, newValue, oldValue, isSVG) => {
     if (propName[0] === 'o' && propName[1] === 'n') {
       const eventType = propName.toLowerCase().slice(2);

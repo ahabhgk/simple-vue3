@@ -13,8 +13,6 @@ export const Fragment = {
     } else {
       n2.node = n1.node
       n2.anchor = n1.anchor
-      console.log('update fragment')
-      console.log(n1, n2)
       patchChildren(n1, n2, container, isSVG)
     }
   },
