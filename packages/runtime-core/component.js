@@ -10,8 +10,8 @@ export const recordInstanceBoundEffect = (effect) => {
   if (currentInstance) currentInstance.effects.push(effect)
 }
 
-export const getParentInstance = (instance) => {
-  let parentVNode = instance.vnode.parent
+export const getParentInstance = (vnode) => {
+  let parentVNode = vnode.parent
   while (parentVNode != null) {
     if (parentVNode.instance != null) return parentVNode.instance
     parentVNode = parentVNode.parent

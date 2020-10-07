@@ -35,3 +35,5 @@ export function ref(value) {
     },
   }))
 }
+
+export const isRef = v => v && v[RefFlags.IS_REF] === true

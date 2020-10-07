@@ -1,7 +1,7 @@
 import { isString, isArray, isText, isPromise, isFunction } from '../shared'
 import { getParentInstance, isSetupComponent } from './component'
 import { isSameVNodeType, h, TextType, isTextType } from './vnode'
-import { reactive, effect, stop } from '../reactivity'
+import { reactive, effect, stop, isRef } from '../reactivity'
 import { setCurrentInstance } from './component'
 import { queueJob } from './scheduler'
 import { callWithErrorHandling } from './error-handling'
@@ -16,6 +16,29 @@ export function createRenderer(renderOptions) {
     setProperty: hostSetProperty,
     remove: hostRemove,
   } = renderOptions
+
+  const setRef = (ref, oldRef, vnode) => {
+    // unset old ref
+    if (oldRef != null && oldRef !== ref) {
+      if (isRef(oldRef)) oldRef.value = null
+    }
+    // set new ref
+    const value = getRefValue(vnode)
+    if (isRef(ref)) {
+      ref.value = value
+    } else if (isFunction(ref)) {
+      callWithErrorHandling(ref, getParentInstance(vnode), [value])
+    } else {
+      console.warn('Invalid ref type:', value, `(${typeof value})`)
+    }
+  }
+
+  const getRefValue = (vnode) => {
+    const { type } = vnode
+    if (isSetupComponent(type)) return vnode.instance
+    if (isString(type) || isTextType(type)) return vnode.node
+    return type.getRefValue(internals, { vnode })
+  }
 
   const patch = (n1, n2, container, isSVG, anchor = null) => {
     if (n1 && !isSameVNodeType(n1, n2)) {
@@ -32,6 +55,10 @@ export function createRenderer(renderOptions) {
       processText(n1, n2, container, anchor)
     } else {
       type.patch(internals, { n1, n2, container, isSVG, anchor })
+    }
+
+    if (n2.ref != null) {
+      setRef(n2.ref, n1?.ref ?? null, n2)
     }
   }
 
@@ -62,7 +89,11 @@ export function createRenderer(renderOptions) {
   }
 
   const unmount = (vnode, doRemove = true) => {
-    const { type } = vnode
+    const { type, ref } = vnode
+    if (ref != null) {
+      setRef(ref, null, vnode)
+    }
+
     if (isSetupComponent(type)) {
       const { instance } = vnode
       instance.effects.forEach(stop)
@@ -90,7 +121,7 @@ export function createRenderer(renderOptions) {
         parent: null,
         provides: null,
       }
-      const parentInstance = instance.parent = getParentInstance(instance)
+      const parentInstance = instance.parent = getParentInstance(n2)
       instance.provides = parentInstance ? parentInstance.provides : Object.create(null)
 
       setCurrentInstance(instance)
@@ -251,6 +282,7 @@ export function createRenderer(renderOptions) {
     getNextSibling,
     move,
     unmount,
+    getRefValue,
     mountChildren,
     patchChildren,
     renderOptions,

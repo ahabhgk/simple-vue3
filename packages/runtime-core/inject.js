@@ -1,5 +1,5 @@
 import { isFunction } from '../shared'
-import { getCurrentInstance, getParentInstance } from './component'
+import { getCurrentInstance } from './component'
 
 export const provide = (key, value) => {
   const currentInstance = getCurrentInstance()
