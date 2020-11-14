@@ -1,7 +1,7 @@
 import { isFunction } from '../shared'
 import { getCurrentInstance } from './component'
 
-export const provide = (key, value) => {
+export function provide(key, value) {
   const currentInstance = getCurrentInstance()
   if (!currentInstance) {
     console.warn(`provide() can only be used inside setup().`)
@@ -15,7 +15,7 @@ export const provide = (key, value) => {
   }
 }
 
-export const inject = (key, defaultValue) => {
+export function inject(key, defaultValue) {
   const currentInstance = getCurrentInstance()
   if (currentInstance) {
     const { provides } = currentInstance
